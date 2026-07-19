@@ -19,3 +19,30 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # Habilitar soporte de Feign para usar Circuit Breaker
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+
+# URL del microservicio ms-products consumido vía Feign
+clients:
+  products:
+    url: ${PRODUCTS_SERVICE_URL:http://localhost:8081}
+
+# Configuración de Patrones de Resiliencia (Circuit Breaker + Retry)
+resilience4j:
+  circuitbreaker:
+    instances:
+      productsCB:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 2
+  retry:
+    instances:
+      productsRetry:
+        maxAttempts: 3
+        waitDuration: 1000

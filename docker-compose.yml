@@ -74,9 +74,12 @@ services:
       DB_NAME: db_orders
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      PRODUCTS_SERVICE_URL: http://ms-products:8081
     depends_on:
       db-orders:
         condition: service_healthy
+      ms-products:
+        condition: service_started
     networks:
       - backend
     expose:
