@@ -1,0 +1,135 @@
+services:
+  # ---------------- Bases de datos (una por microservicio) ----------------
+  db-products:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: db_products
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - db-products-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d db_products"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  db-orders:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: db_orders
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - db-orders-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d db_orders"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  db-customers:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: db_customers
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - db-customers-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d db_customers"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  # ---------------- Microservicios ----------------
+  ms-products:
+    build: ./ms-products
+    environment:
+      DB_HOST: db-products
+      DB_PORT: 5432
+      DB_NAME: db_products
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    depends_on:
+      db-products:
+        condition: service_healthy
+    networks:
+      - backend
+    expose:
+      - "8081"
+
+  ms-orders:
+    build: ./ms-orders
+    environment:
+      DB_HOST: db-orders
+      DB_PORT: 5432
+      DB_NAME: db_orders
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+    depends_on:
+      db-orders:
+        condition: service_healthy
+    networks:
+      - backend
+    expose:
+      - "8082"
+
+  ms-customers:
+    build: ./ms-customers
+    environment:
+      DB_HOST: db-customers
+      DB_PORT: 5432
+      DB_NAME: db_customers
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+    depends_on:
+      db-customers:
+        condition: service_healthy
+    networks:
+      - backend
+    expose:
+      - "8083"
+
+  # ---------------- Autenticación / Autorización ----------------
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+
+  # ---------------- Punto de entrada único ----------------
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - ms-products
+      - ms-orders
+      - ms-customers
+      - keycloak
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  db-products-data:
+  db-orders-data:
+  db-customers-data:
