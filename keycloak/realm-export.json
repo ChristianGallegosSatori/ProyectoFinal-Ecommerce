@@ -1,0 +1,51 @@
+{
+  "realm": "ecommerce",
+  "enabled": true,
+  "sslRequired": "none",
+  "roles": {
+    "realm": [
+      { "name": "cliente", "description": "Usuario que compra en la plataforma" },
+      { "name": "administrador", "description": "Usuario con permisos de gestion del catalogo" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "ecommerce-app",
+      "name": "Ecommerce App",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "cliente1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "cliente1@example.com",
+      "firstName": "Cliente",
+      "lastName": "Uno",
+      "credentials": [
+        { "type": "password", "value": "cliente123", "temporary": false }
+      ],
+      "realmRoles": ["cliente"]
+    },
+    {
+      "username": "admin1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "admin1@example.com",
+      "firstName": "Admin",
+      "lastName": "Uno",
+      "credentials": [
+        { "type": "password", "value": "admin123", "temporary": false }
+      ],
+      "realmRoles": ["administrador", "cliente"]
+    }
+  ]
+}
